@@ -35,7 +35,7 @@ Uses of dependent types
 > Y means you need to end the round in a draw,
 > and Z means you need to win. Good luck!"
 
-```
+```agda
 -- Given the opponent's move, find your move that matches a goal outcome.
 infer : (theirs : RPS) → (goal : Outcome) →
         ∃[ yours ] (theirs vs yours) ≡ goal
