@@ -49,22 +49,22 @@ example : Input
 example = from-just $ readInput $
   "A Y\nB X\nC Z"
 
-data RPS : Set where
-  R P S : RPS
+data ✊✋✌ : Set where
+  ✊ ✋ ✌ : ✊✋✌
 
 data Outcome : Set where
   lose draw win : Outcome
 
-_vs_ : RPS → RPS → Outcome
-R vs S = lose
-P vs R = lose
-S vs P = lose
-R vs R = draw
-P vs P = draw
-S vs S = draw
-R vs P = win
-P vs S = win
-S vs R = win
+_vs_ : ✊✋✌ → ✊✋✌ → Outcome
+✊ vs ✌ = lose
+✋ vs ✊ = lose
+✌ vs ✋ = lose
+✊ vs ✊ = draw
+✋ vs ✋ = draw
+✌ vs ✌ = draw
+✊ vs ✋ = win
+✋ vs ✌ = win
+✌ vs ✊ = win
 
 module Score where
   outcome : Outcome → ℕ
@@ -72,31 +72,31 @@ module Score where
   outcome draw = 3
   outcome win = 6
 
-  shape : RPS → ℕ
-  shape R = 1
-  shape P = 2
-  shape S = 3
+  shape : ✊✋✌ → ℕ
+  shape ✊ = 1
+  shape ✋ = 2
+  shape ✌ = 3
 
-  round : RPS → RPS → ℕ
+  round : ✊✋✌ → ✊✋✌ → ℕ
   round theirs yours = shape yours + outcome (theirs vs yours)
 
-  rounds : List (RPS × RPS) → ℕ
+  rounds : List (✊✋✌ × ✊✋✌) → ℕ
   rounds = sum ∘ List.map (uncurry round)
 
-ABC→RPS : ABC → RPS
-ABC→RPS = λ where
-  A → R
-  B → P
-  C → S
+ABC→✊✋✌ : ABC → ✊✋✌
+ABC→✊✋✌ = λ where
+  A → ✊
+  B → ✋
+  C → ✌
 
-XYZ→RPS : XYZ → RPS
-XYZ→RPS = λ where
-  X → R
-  Y → P
-  Z → S
+XYZ→✊✋✌ : XYZ → ✊✋✌
+XYZ→✊✋✌ = λ where
+  X → ✊
+  Y → ✋
+  Z → ✌
 
-decode-1 : Input → List (RPS × RPS)
-decode-1 = List.map (Prod.map ABC→RPS XYZ→RPS)
+decode-1 : Input → List (✊✋✌ × ✊✋✌)
+decode-1 = List.map (Prod.map ABC→✊✋✌ XYZ→✊✋✌)
 
 solve-1 : Input → ℕ
 solve-1 = Score.rounds ∘ decode-1
@@ -107,21 +107,21 @@ XYZ→Outcome = λ where
   Y → draw
   Z → win
 
-infer : (theirs : RPS) → (goal : Outcome) →
+infer : (theirs : ✊✋✌) → (goal : Outcome) →
         ∃[ yours ] (theirs vs yours) ≡ goal
-infer R lose = S , refl
-infer R draw = R , refl
-infer R win  = P , refl
-infer P lose = R , refl
-infer P draw = P , refl
-infer P win  = S , refl
-infer S lose = P , refl
-infer S draw = S , refl
-infer S win  = R , refl
+infer ✊ lose = ✌ , refl
+infer ✊ draw = ✊ , refl
+infer ✊ win  = ✋ , refl
+infer ✋ lose = ✊ , refl
+infer ✋ draw = ✋ , refl
+infer ✋ win  = ✌ , refl
+infer ✌ lose = ✋ , refl
+infer ✌ draw = ✌ , refl
+infer ✌ win  = ✊ , refl
 
-decode-2 : Input → List (RPS × RPS)
+decode-2 : Input → List (✊✋✌ × ✊✋✌)
 decode-2 = List.map λ{ (abc , xyz) →
-  let theirs = ABC→RPS abc
+  let theirs = ABC→✊✋✌ abc
       yours , _ = infer theirs (XYZ→Outcome xyz)
   in theirs , yours  }
 
