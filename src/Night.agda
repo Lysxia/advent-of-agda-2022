@@ -4,6 +4,7 @@ module Night where
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
 open import Data.List.Base using ([]; _∷_)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
 open import Data.String as String using (String; _≈?_)
 open import Data.Unit
@@ -29,3 +30,7 @@ instance
   Show-× : ∀ {a b : Set} → ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
   Show-× = show:= λ{ (x , y) → show x String.++ " , " String.++ show y }
 
+  Show-Maybe : {a : Set} → ⦃ Show a ⦄ → Show (Maybe a)
+  Show-Maybe = show:= λ where
+    nothing → "nothing"
+    (just x) → show x

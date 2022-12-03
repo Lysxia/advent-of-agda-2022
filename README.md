@@ -40,3 +40,12 @@ Uses of dependent types
 infer : (theirs : RPS) → (goal : Outcome) →
         ∃[ yours ] (theirs vs yours) ≡ goal
 ```
+
+### Day 3
+
+> the badge is the only item type carried by all three Elves.
+
+```agda
+find-intersects : (xs : List A) → (xss : List (List A)) →
+                  Dec (∃[ x ] All (x ∈_) (xs ∷ xss))
+```
