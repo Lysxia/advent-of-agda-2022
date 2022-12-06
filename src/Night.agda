@@ -1,6 +1,7 @@
 -- | Utils module
 module Night where
 
+open import Function.Base using (id)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
 open import Data.List.Base using ([]; _∷_)
@@ -34,3 +35,6 @@ instance
   Show-Maybe = show:= λ where
     nothing → "nothing"
     (just x) → show x
+
+  Show-String : Show String
+  Show-String = show:= id
