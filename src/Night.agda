@@ -1,13 +1,17 @@
 -- | Utils module
 module Night where
 
+open import Level using () renaming (zero to 0ℓ)
 open import Function.Base using (id; _∘_)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
-open import Data.Integer.Base using (ℤ)
+open import Data.Integer.Base as ℤ using (ℤ)
 import Data.Integer.Show as ℤ
+open import Data.Sign.Base as Sign using (Sign)
 open import Data.List.Base as List using (List; []; _∷_)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.List.Effectful as List
+open import Data.Maybe as Maybe using (Maybe; just; nothing)
+open import Data.Maybe.Effectful as Maybe using (applicative)
 open import Data.Product using (_×_; _,_)
 open import Data.String as String using (String; _≈?_; unlines)
 open import Data.Unit
@@ -46,3 +50,17 @@ instance
 
   Show-List : {a : Set} → ⦃ Show a ⦄ → Show (List a)
   Show-List = show:= (String.unwords ∘ List.map show)
+
+open List.TraversableA {0ℓ} Maybe.applicative public
+  renaming (mapA to traverse)
+
+readSign : String → Maybe (Sign × String)
+readSign s with String.uncons s
+... | just ('+' , etc) = just (Sign.+ , etc)
+... | just ('-' , etc) = just (Sign.- , etc)
+... | _ = nothing
+
+readℤ : String → Maybe ℤ
+readℤ s with readSign s
+... | just (s , etc) = Maybe.map (s ℤ.◃_) (ℕ.readMaybe 10 etc)
+... | nothing = Maybe.map ℤ.+_ (ℕ.readMaybe 10 s)

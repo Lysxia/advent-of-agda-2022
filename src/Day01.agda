@@ -5,11 +5,9 @@ open import Function.Base using (_∘_; _$_)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ using (readMaybe)
 open import Data.List.Base using (List; []; _∷_; map; sum; mapMaybe; take)
-open import Data.List.Effectful as List
 open import Data.List.NonEmpty as List⁺ using (wordsBy; toList) renaming (map to map⁺)
 open import Data.Unit using (⊤)
 open import Data.Maybe using (Maybe; just; nothing; from-just)
-open import Data.Maybe.Effectful as Maybe using (applicative)
 open import Data.Product using (_×_; _,_)
 open import Data.String as String using (String; lines; _≈?_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
@@ -35,8 +33,6 @@ Input = List (List ℕ)
 -- Parsing
 readInput : List String → Maybe Input
 readInput = traverse (traverse (ℕ.readMaybe 10) ∘ toList) ∘ wordsBy ("" ≈?_)
-  where
-    open List.TraversableA Maybe.applicative renaming (mapA to traverse)
 
 example : Input
 example = from-just $ readInput $

@@ -38,7 +38,6 @@ readXYZ _ = nothing
 readInput : String → Maybe Input
 readInput = traverse (readLine ∘ words) ∘ lines
   where
-    open List.TraversableA Maybe.applicative renaming (mapA to traverse)
     open RawApplicative Maybe.applicative using (_⊗_)
 
     readLine : List String → Maybe (ABC × XYZ)

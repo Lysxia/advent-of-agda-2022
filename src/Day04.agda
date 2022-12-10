@@ -4,9 +4,7 @@ open import Effect.Applicative
 open import Function.Base using (_$_; _∘_)
 open import Data.Bool
 open import Data.List.Base as List using (List; []; _∷_)
-import Data.List.Effectful as List
 open import Data.Maybe.Base as Maybe using (Maybe; nothing; just; from-just; maybe)
-import Data.Maybe.Effectful as Maybe
 open import Data.Nat.Base as ℕ using (ℕ)
 import Data.Nat.Show as ℕ
 open import Data.Product as Prod using (_×_; _,_; <_,_>; uncurry)
@@ -25,7 +23,6 @@ Input = List (Section × Section)
 readInput : List String → Maybe Input
 readInput = traverse ((Maybe._>>= toPair) ∘ traverse (ℕ.readMaybe 10) ∘ words')
   where
-    open List.TraversableA Maybe.applicative renaming (mapA to traverse)
     words' = wordsByᵇ (λ c → (c ≈ᵇ '-') ∨ (c ≈ᵇ ','))
     toPair = λ where
       (l1 ∷ r1 ∷ l2 ∷ r2 ∷ []) → just ([ l1 - r1 ] , [ l2 - r2 ])

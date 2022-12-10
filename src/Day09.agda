@@ -10,10 +10,8 @@ open import Data.Integer.Properties using (_≤?_; <-cmp; ≰⇒>; ≤-decTotalO
 open import Data.Integer.Literals renaming (number to number-ℤ)
 open import Data.Product.Relation.Binary.Lex.NonStrict using (×-decTotalOrder)
 open import Data.List as List using (List; []; _∷_)
-open import Data.List.Effectful as List
 open import Data.List.Sort.MergeSort using (sort)
 open import Data.Maybe as Maybe using (Maybe; nothing; just; from-just; maybe)
-open import Data.Maybe.Effectful as Maybe using (applicative)
 open import Data.String as String using (String; lines; words)
 open import Data.Nat.Show as ℕ using (readMaybe)
 open import Data.Product as Prod using (∃-syntax; _×_; _,_; <_,_>; uncurry)
@@ -66,8 +64,6 @@ readInput : List String → Maybe Input
 readInput = traverse λ line → case words line of λ where
     (d ∷ n ∷ []) → Maybe.zip (readDir d) (ℕ.readMaybe 10 n)
     _ → nothing
-  where
-    open List.TraversableA Maybe.applicative renaming (mapA to traverse)
 
 example : Input
 example = from-just $ readInput $ 
