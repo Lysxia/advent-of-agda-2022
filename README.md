@@ -70,3 +70,21 @@ infer : (theirs : RPS) → (goal : Outcome) →
 find-intersects : (xs : List A) → (xss : List (List A)) →
                   Dec (∃[ x ] All (x ∈_) (xs ∷ xss))
 ```
+
+### Day 9
+
+> the head (H) and tail (T) must always be touching (diagonally adjacent and
+> even overlapping both count as touching)
+
+- `[ H - T by H-T≤1 ∷ nil ]`: A chain with two knots `H` and `T` with a proof `H-T≤1` that they are at distance at most 1 of each other.
+- `[ H - T1 by H-T1≤1 ∷ — T2 by T1-T2≤1 ∷ — T3 by T2-T3≤1 ∷ nil ]`: etc.
+
+```agda
+record RopeFrom (H : Point) : Set where
+  inductive
+  constructor _by_∷_
+  field
+    T : Point
+    @0 H-T : distance[ H , T ]≤1
+    more : Maybe (RopeFrom T)
+```
