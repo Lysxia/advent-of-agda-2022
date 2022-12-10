@@ -1,13 +1,15 @@
 -- | Utils module
 module Night where
 
-open import Function.Base using (id)
+open import Function.Base using (id; _∘_)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
-open import Data.List.Base using ([]; _∷_)
+open import Data.Integer.Base using (ℤ)
+import Data.Integer.Show as ℤ
+open import Data.List.Base as List using (List; []; _∷_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
-open import Data.String as String using (String; _≈?_)
+open import Data.String as String using (String; _≈?_; unlines)
 open import Data.Unit
 open import Reflection
 
@@ -28,6 +30,9 @@ instance
   Show-ℕ : Show ℕ
   Show-ℕ = show:= ℕ.show
 
+  Show-ℤ : Show ℤ
+  Show-ℤ = show:= ℤ.show
+
   Show-× : ∀ {a b : Set} → ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
   Show-× = show:= λ{ (x , y) → show x String.++ " , " String.++ show y }
 
@@ -38,3 +43,6 @@ instance
 
   Show-String : Show String
   Show-String = show:= id
+
+  Show-List : {a : Set} → ⦃ Show a ⦄ → Show (List a)
+  Show-List = show:= (String.unwords ∘ List.map show)

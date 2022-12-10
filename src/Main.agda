@@ -13,6 +13,7 @@ import Day03
 import Day04
 import Day05
 import Day06
+import Day09
 
 run : String → (String → String) → IO ⊤
 run name f = do
@@ -27,3 +28,4 @@ main = IO.run do
   run "Day04" Day04.sol
   run "Day05" Day05.sol
   run "Day06" Day06.sol
+  run "Day09" Day09.sol
