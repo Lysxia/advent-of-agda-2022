@@ -9,10 +9,31 @@ sh compile.sh
 ./Main
 ```
 
-Requirements:
+### Requirements
 
 - Agda
 - agda-stdlib
+- [komachi](https://github.com/Lysxia/komachi), applicative regex library
+- [schmitty](https://github.com/wenkokke/schmitty) ([fork](https://github.com/Lysxia/schmitty/tree/better-error)), bindings for SMT solvers
+
+```
+# Not pictured: install Agda, install Z3 (external dependency of schmitty)
+
+# Install libraries
+git clone https://github.com/agda/agda-stdlib
+git clone https://github.com/Lysxia/komachi
+git clone https://github.com/gallais/agdarsec   # Dependency of schmitty
+git clone https://github.com/Lysxia/schmitty -b better-error
+
+cat >> $HOME/.agda/libraries<< EOF
+`pwd`/agda-stdlib
+`pwd`/komachi
+`pwd`/agdarsec
+`pwd`/schmitty
+EOF
+
+echo /usr/bin/z3 >> $HOME/.agda/executables
+```
 
 Architecture
 ------------
