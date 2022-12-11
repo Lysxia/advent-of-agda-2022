@@ -112,8 +112,8 @@ uniq-Point = uniq Point-decTotalOrder
 -- *** 1D Distance
 data distance₁[_,_]≤1 : ℤ → ℤ → Set where
   _,_ : ∀ {x1 x2} →
-    x1 - x2 ≤ 1 →
-    x2 - x1 ≤ 1 →
+    @0 x1 - x2 ≤ 1 →
+    @0 x2 - x1 ≤ 1 →
     distance₁[ x1 , x2 ]≤1
 
 -- *** 2D Distance (infinity norm)
@@ -181,7 +181,7 @@ distance[ (x1 , y1) , (x2 , y2) ]≤1? with distance₁[ x1 , x2 ]≤1? ×-dec d
 ... | no ¬dx,dy = no λ{ (dx , dy) → ¬dx,dy (dx , dy) }
 
 
--- ** move₁: displace one knot given the previous knot's displacement
+-- ** move₁: displace one knot given the previous knot's displacement (1D version)
 
 data Ordering (i j : ℤ) : Set where
   [<] : i < j → Ordering i j
@@ -197,38 +197,38 @@ ord i j with <-cmp i j
 move₁ : {H H2 T : ℤ} →
   @0 distance₁[ H , T ]≤1 →
   @0 distance₁[ H , H2 ]≤1 →
-  ∃[ T2 ] distance₁[ H2 , T2 ]≤1 × distance₁[ T , T2 ]≤1
+  ∃[ T2 ] Erased (distance₁[ H2 , T2 ]≤1 × distance₁[ T , T2 ]≤1)
 move₁ {H} {H2} {T} (_ , _) (_ , _) with ord H2 T
-... | [<] H2<T = T - 1 , (solveZ3 , solveZ3) , distance₁[x,x-1]≤1
-... | [≡] H2≡T = T ,     (solveZ3 , solveZ3) , distance₁[x,x]≤1
-... | [>] H2>T = T + 1 , (solveZ3 , solveZ3) , distance₁[x,x+1]≤1
+... | [<] H2<T = T - 1 , erased ((solveZ3 , solveZ3) , distance₁[x,x-1]≤1)
+... | [≡] H2≡T = T ,     erased ((solveZ3 , solveZ3) , distance₁[x,x]≤1)
+... | [>] H2>T = T + 1 , erased ((solveZ3 , solveZ3) , distance₁[x,x+1]≤1)
 
 
 -- ** Displace a Rope
 
-move : {H : Point} → RopeFrom H → (H2 : Point) → distance[ H , H2 ]≤1 → RopeFrom H2
-move? : {H : Point} → Maybe (RopeFrom H) → (H2 : Point) → distance[ H , H2 ]≤1 → Maybe (RopeFrom H2)
+move : {H : Point} → RopeFrom H → (H2 : Point) → @0 distance[ H , H2 ]≤1 → RopeFrom H2
+move? : {H : Point} → Maybe (RopeFrom H) → (H2 : Point) → @0 distance[ H , H2 ]≤1 → Maybe (RopeFrom H2)
 
 move (T@(xT , yT) by (xHT , yHT) ∷ more?) H2@(xH2 , yH2) (xHH2 , yHH2)
     with distance[ H2 , T ]≤1?
 ... | yes d[H2,T]≤1 = T by d[H2,T]≤1 ∷ more?
 ... | no ¬d[H2,T]≤1
     with move₁ xHT xHH2 | move₁ yHT yHH2
-... | xT2 , xH2T2 , xTT2 | yT2 , yH2T2 , yTT2
+... | xT2 , erased (xH2T2 , xTT2) | yT2 , erased (yH2T2 , yTT2)
     = (xT2 , yT2) by (xH2T2 , yH2T2) ∷ move? more? (xT2 , yT2) (xTT2 , yTT2)
 
 move? nothing _ _ = nothing
 move? (just more) H2 H-H2≤1 = just (move more H2 H-H2≤1)
 
-neighbor-at : Dir → (H : Point) → ∃[ H2 ] distance[ H , H2 ]≤1
-neighbor-at U (x , y) = (x , y + 1) , (distance₁[x,x]≤1 , distance₁[x,x+1]≤1)
-neighbor-at D (x , y) = (x , y - 1) , (distance₁[x,x]≤1 , distance₁[x,x-1]≤1)
-neighbor-at L (x , y) = (x - 1 , y) , (distance₁[x,x-1]≤1 , distance₁[x,x]≤1)
-neighbor-at R (x , y) = (x + 1 , y) , (distance₁[x,x+1]≤1 , distance₁[x,x]≤1)
+neighbor-at : Dir → (H : Point) → ∃[ H2 ] Erased distance[ H , H2 ]≤1
+neighbor-at U (x , y) = (x , y + 1) , erased (distance₁[x,x]≤1 , distance₁[x,x+1]≤1)
+neighbor-at D (x , y) = (x , y - 1) , erased (distance₁[x,x]≤1 , distance₁[x,x-1]≤1)
+neighbor-at L (x , y) = (x - 1 , y) , erased (distance₁[x,x-1]≤1 , distance₁[x,x]≤1)
+neighbor-at R (x , y) = (x + 1 , y) , erased (distance₁[x,x+1]≤1 , distance₁[x,x]≤1)
 
 move-to : Dir → Rope → Rope
 move-to d p@([ H - more ]) with neighbor-at d H
-... | H2 , H-H2≤1 = [ H2 - move more H2 H-H2≤1 ]
+... | H2 , erased H-H2≤1 = [ H2 - move more H2 H-H2≤1 ]
 
 
 -- ** Final touches

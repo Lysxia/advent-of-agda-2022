@@ -16,6 +16,8 @@ open import Data.Maybe.Effectful as Maybe using (applicative)
 open import Data.Product using (_×_; _,_)
 open import Data.String as String using (String; _≈?_; unlines)
 open import Data.Unit
+open import Relation.Nullary using (¬_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Reflection
 
 macro
@@ -68,3 +70,12 @@ readℤ : String → Maybe ℤ
 readℤ s with readSign s
 ... | just (s , etc) = Maybe.map (s ℤ.◃_) (ℕ.readMaybe 10 etc)
 ... | nothing = Maybe.map ℤ.+_ (ℕ.readMaybe 10 s)
+
+_ : readℤ "+3" ≡ just (ℤ.+ 3)
+_ = refl
+
+_ : readℤ "-3" ≡ just (ℤ.- (ℤ.+ 3))
+_ = refl
+
+data Erased (P : Set) : Set where
+  erased : @0 P → Erased P
