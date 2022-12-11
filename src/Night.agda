@@ -3,6 +3,7 @@ module Night where
 
 open import Level using () renaming (zero to 0ℓ)
 open import Function.Base using (id; _∘_)
+open import Data.Fin.Base as Fin using (Fin)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
 open import Data.Integer.Base as ℤ using (ℤ)
@@ -36,6 +37,9 @@ instance
 
   Show-ℤ : Show ℤ
   Show-ℤ = show:= ℤ.show
+
+  Show-Fin : {n : ℕ} → Show (Fin n)
+  Show-Fin = show:= (show ∘ Fin.toℕ)
 
   Show-× : ∀ {a b : Set} → ⦃ Show a ⦄ → ⦃ Show b ⦄ → Show (a × b)
   Show-× = show:= λ{ (x , y) → show x String.++ " , " String.++ show y }
