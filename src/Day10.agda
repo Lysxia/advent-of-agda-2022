@@ -263,5 +263,6 @@ _ : solve-2 prep-example ≡ String.unlines (
   [])
 _ = refl
 
+-- GHC is miscompiling this
 sol : String → String
-sol = maybe (show ∘ < solve-1 , ("\n" String.++_) ∘ solve-2 > ∘ prep) "" ∘ readInput ∘ String.lines
+sol = maybe (show ∘ < solve-1 , ("\n" String.++_) ∘ solve-2 > ∘ prep) "if you see this, try recompiling with ghc -O0" ∘ readInput ∘ String.lines
