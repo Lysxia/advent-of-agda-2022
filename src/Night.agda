@@ -77,5 +77,13 @@ _ = refl
 _ : readℤ "-3" ≡ just (ℤ.- (ℤ.+ 3))
 _ = refl
 
-data Erased (P : Set) : Set where
-  erased : @0 P → Erased P
+record Erased (@0 P : Set) : Set where
+  constructor erased
+  field
+    @0 unerase : P
+
+open Erased public
+
+Erased-map : {@0 A : Set} → {@0 P : A → Set} → (@0 f : (x : A) → P x) →
+  (x : Erased A) → Erased (P (unerase x))
+Erased-map f (erased x) = erased (f x)
