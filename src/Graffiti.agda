@@ -174,7 +174,7 @@ record SimpleGraph : Set₁ where
 
     neighbors : Vertex → List Vertex
 
-module SimleGraphTheory (G : SimpleGraph) (E : Ensembles (SimpleGraph.Vertex G)) where
+module SimpleGraphTheory (G : SimpleGraph) (E : Ensembles (SimpleGraph.Vertex G)) where
   open SimpleGraph G
   open Ensembles E
 
@@ -298,11 +298,12 @@ module NatMap where
 
 module Nat2Map where
 
-  private
-    ℕ²-strictTotalOrder : StrictTotalOrder _ _ _
-    ℕ²-strictTotalOrder = ×-strictTotalOrder Nat.<-strictTotalOrder Nat.<-strictTotalOrder
+  STO : StrictTotalOrder _ _ _
+  STO = ×-strictTotalOrder Nat.<-strictTotalOrder Nat.<-strictTotalOrder
 
-  open Map ℕ²-strictTotalOrder public
+  open StrictTotalOrder STO public renaming (_<_ to _<²_)
+
+  open Map STO public
 
 module Griddy where
   open Nat2Map public
@@ -330,7 +331,7 @@ module Griddy where
 
   four-neighbors-Point : Point n m → List (Point n m)
   four-neighbors-Point ((i , j) , _) =
-    let z2 = (suc i , j) ∷ (i , suc i) ∷ []
+    let z2 = (suc i , j) ∷ (i , suc j) ∷ []
         z3 = case i of λ where
           (suc i′) → (i′ , j) ∷ z2
           zero → z2
@@ -368,3 +369,23 @@ module Griddy where
       inject ((i , j) , i<n , j<m) ((i′ , j′) , i′<n , j′<m) fx≡fy =
         let ff , gg = Fin.combine-injective (Fin.fromℕ<″ i i<n) _ _ _ fx≡fy
         in Point-point (cong₂ _,_ (fromℕ-injective ff) (fromℕ-injective gg))
+
+  lengthHead : List (List A) → ℕ
+  lengthHead = λ{ [] → 0 ; (x ∷ _) → List.length x }
+
+  module Graph {A : Set} (matrix : List (List A)) (edge : A → A → Bool) where
+    nRows : ℕ
+    nRows = List.length matrix
+
+    nCols : ℕ
+    nCols = lengthHead matrix
+
+    vertexMap : Map A
+    vertexMap = to2D matrix
+
+    graph : SimpleGraph
+    graph = record
+      { Vertex = Point nRows nCols
+      ; Finite-Vertex = Finite-Point
+      ; neighbors = four-neighbors edge vertexMap
+      }
