@@ -15,13 +15,15 @@ open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any as Any using (Any; here; there)
 open import Data.List.Relation.Binary.Subset.Propositional.Properties as List
 open import Data.Product as Prod using (∃-syntax; Σ-syntax; _×_; _,_; proj₁; proj₂; uncurry)
+import Data.Tree.AVL.Sets as Sets
+import Data.Tree.AVL.Sets.Membership as SetsMembership
 open import Data.Sum.Base as Sum using (_⊎_; inj₁; inj₂)
 open import Induction.WellFounded
-open import Relation.Nullary using (¬_; Dec; yes; no)
+open import Relation.Nullary using (¬_; Dec; yes; no; _because_)
 open import Relation.Unary as R1 using (Pred; _∪_; _⊆_; _≐_)
 open import Relation.Unary.Algebra
 open import Relation.Unary.Properties
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; sym; cong)
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 open import Relation.Binary.Bundles
 open import Relation.Binary.Structures
@@ -77,6 +79,24 @@ _⊃_ = flip _⊂_
 cong-irr-proj₂ : {x y : ∃[ x ] Irrelevant (P x)} → proj₁ x ≡ proj₁ y → x ≡ y
 cong-irr-proj₂ refl = refl
 
+irr-⊥ : .⊥ → ⊥
+irr-⊥ ()
+
+erased-⊥ : @0 ⊥ → ⊥
+erased-⊥ ()
+
+@0 with-erased : {@0 A : Set} → {@0 P : A → Set} → (x : Erased A) → (@0 _ : (x : A) → P x) → P (unerase x)
+with-erased x f = f (unerase x)
+
+@0 erased-fun : {@0 A : Set} → {@0 P : A → Set} → (@0 _ : (x : A) → Erased (P x)) → (x : A) → P x
+erased-fun f x = unerase (f x)
+
+_Erased->>=_ : {@0 A B : Set} → (x : Erased A) → (@0 f : A → Erased B) → Erased B
+x Erased->>= f = erased (unerase (f (unerase x)))
+
+Erased-<&> : {@0 A B : Set} → (x : Erased A) → (@0 f : A → B) → Erased B
+Erased-<&> (erased x) f = erased (f x)
+
 module _ (Cof-P : IsCofiniteSubset P) (P⊂Q@(P⊆Q , x0 , Qx0 , ¬Px0) : P ⊂ Q) where
 
   i0 : Fin (card⁺ Cof-P)
@@ -91,9 +111,6 @@ module _ (Cof-P : IsCofiniteSubset P) (P⊂Q@(P⊆Q , x0 , Qx0 , ¬Px0) : P ⊂ 
     fin-delete : (i j : Fin n) → i ≢ j → Fin (Nat.pred n)
     fin-delete i j with Nat.NonZero.nonZero (fin-NonZero i)
     fin-delete {suc _} i j | _ = Fin.punchOut
-
-    irr-⊥ : .⊥ → ⊥
-    irr-⊥ ()
 
     module _ ((f , injective-f) : Subset (¬_ ∘ P) ↪ Fin (suc n)) where
 
@@ -168,18 +185,6 @@ module SimleGraphTheory (G : SimpleGraph) (E : Ensembles (SimpleGraph.Vertex G))
       @0 (_∈ list) ⊆ (_∈ pending) →
       Uniq V0 pending
 
-  @0 with-erased : {@0 A : Set} → {@0 P : A → Set} → (x : Erased A) → (@0 _ : (x : A) → P x) → P (unerase x)
-  with-erased x f = f (unerase x)
-
-  @0 erased-fun : {@0 A : Set} → {@0 P : A → Set} → (@0 _ : (x : A) → Erased (P x)) → (x : A) → P x
-  erased-fun f x = unerase (f x)
-
-  _Erased->>=_ : {@0 A B : Set} → (x : Erased A) → (@0 f : A → Erased B) → Erased B
-  x Erased->>= f = erased (unerase (f (unerase x)))
-
-  Erased-<&> : {@0 A B : Set} → (x : Erased A) → (@0 f : A → B) → Erased B
-  Erased-<&> (erased x) f = erased (f x)
-
   uniq : {@0 Visited : Vertex → Set} →
     Ensemble Visited → (pending : List Vertex) → Uniq Visited pending
   uniq visited [] = mk-uniq [] (ext assoc visited) (λ()) id
@@ -220,13 +225,38 @@ module AVL {A : Set} {_<_ : A → A → Set} (isStrictTotalOrder : IsStrictTotal
   STO = record { isStrictTotalOrder = isStrictTotalOrder }
 
   open StrictTotalOrder STO
+  module S where
+    open Sets STO public
+    open SetsMembership STO public
 
-  open import Data.Tree.AVL.Sets STO
-  open import Data.Tree.AVL.Value Eq.setoid
-  import Data.Tree.AVL.Relation.Unary.Any STO as Sets
-  import Data.Tree.AVL.Indexed.Relation.Unary.Any.Properties STO as AVLₚ
+  private module Ensembles-AVL-impl where
 
-  record Ens (P : A → Set) : Set where
-    field
-      set : ⟨Set⟩
-      set≐P : (λ x → Sets.Any ((x ≡_) ∘ key) set) ≐ P
+    record Ensemble (@0 P : A → Set) : Set where
+      constructor _,_
+      field
+        set : S.⟨Set⟩
+        @0 set≐P : (S._∈ set) ≐ P
+
+    ∅ : Ensemble R1.∅
+    ∅ = S.empty , ⊥-elim ∘ S.∈-empty , λ()
+
+    Dec-∈ : ∀ x s → Dec (x S.∈ s)
+    Dec-∈ x s = _ because S.∈?-Reflects-∈
+
+    _∈?_ : ∀ {@0 P} → (x : A) → Ensemble P → Dec (Erased (P x))
+    x ∈? (s , toP , fromP) with Dec-∈ x s
+    ... | yes sx = yes (erased (toP sx))
+    ... | no ¬sx = no (λ{ (erased Px) → erased-⊥ (¬sx (fromP Px)) })
+
+    insert : ∀ {@0 P} → (x : A) → Ensemble P → Ensemble ((x ≡_) ∪ P)
+    insert x (s , s≐P)
+      = S.insert x s , Sum.map sym (proj₁ s≐P) ∘ S.∈-insert⁻
+      , unerase (Erased-<&> (erased s≐P) λ s≐P → λ where
+          (inj₁ refl) → S.∈-insert⁺⁺
+          (inj₂ Px) → S.∈-insert⁺ (proj₂ s≐P Px))
+
+    ext : ∀ {@0 P Q} → @0 P ≐ Q → Ensemble P → Ensemble Q
+    ext P≐Q (s , s≐P) = s , ≐-trans s≐P P≐Q
+
+  Ensembles-AVL : Ensembles A
+  Ensembles-AVL = record { Ensembles-AVL-impl }
