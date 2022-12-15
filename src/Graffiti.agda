@@ -35,7 +35,7 @@ open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 open import Relation.Binary.Bundles
 open import Relation.Binary.Structures
 
-open import Night using (Erased; erased; unerase; Erased-map)
+open import Night using (Erased; erased; unerase; Erased-map; erased-⊥)
 
 private variable
   A B : Set
@@ -88,9 +88,6 @@ cong-irr-proj₂ refl = refl
 
 irr-⊥ : .⊥ → ⊥
 irr-⊥ ()
-
-erased-⊥ : @0 ⊥ → ⊥
-erased-⊥ ()
 
 @0 with-erased : {@0 A : Set} → {@0 P : A → Set} → (x : Erased A) → (@0 _ : (x : A) → P x) → P (unerase x)
 with-erased x f = f (unerase x)

@@ -4,6 +4,7 @@ module Night where
 open import Level using () renaming (zero to 0ℓ)
 open import Function.Base using (id; _∘_)
 open import Data.Fin.Base as Fin using (Fin)
+open import Data.Empty using (⊥)
 open import Data.Nat.Base using (ℕ)
 import Data.Nat.Show as ℕ
 open import Data.Integer.Base as ℤ using (ℤ)
@@ -87,3 +88,7 @@ open Erased public
 Erased-map : {@0 A : Set} → {@0 P : A → Set} → (@0 f : (x : A) → P x) →
   (x : Erased A) → Erased (P (unerase x))
 Erased-map f (erased x) = erased (f x)
+
+erased-⊥ : @0 ⊥ → ⊥
+erased-⊥ ()
+
