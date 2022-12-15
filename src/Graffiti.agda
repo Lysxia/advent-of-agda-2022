@@ -313,7 +313,7 @@ module Griddy where
     where
       go : ℕ → A → List B → A
       go i x [] = x
-      go i x (y ∷ ys) = go i (f (Nat.suc i) x y) ys
+      go i x (y ∷ ys) = go (suc i) (f i x y) ys
 
   to2D : List (List A) → Map A
   to2D =
