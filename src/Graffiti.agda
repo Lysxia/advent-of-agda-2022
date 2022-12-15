@@ -3,20 +3,26 @@ module Graffiti where
 
 open import Level using () renaming (zero to 0ℓ)
 open import Function.Base using (_∘_; id; flip; case_of_)
+open import Data.Bool.Base using (Bool; true; false)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Unit.Base using (⊤; tt)
-open import Data.Nat.Base as Nat using (ℕ; zero; suc; _<_)
+open import Data.Nat as Nat using (ℕ; zero; suc; _<_)
+open import Data.Nat.Properties as Nat
 open import Data.Irrelevant
-open import Data.Fin.Base as Fin using (Fin; zero; suc)
+open import Data.Fin as Fin using (Fin; zero; suc)
 import Data.Fin.Properties as Fin
 open import Data.Maybe.Base as Maybe using (Maybe; just; nothing)
 open import Data.List.Base as List using (List; []; _∷_)
 open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any as Any using (Any; here; there)
 open import Data.List.Relation.Binary.Subset.Propositional.Properties as List
+open import Data.Vec.Base as Vec using (Vec; []; _∷_)
 open import Data.Product as Prod using (∃-syntax; Σ-syntax; _×_; _,_; proj₁; proj₂; uncurry)
+open import Data.Product.Relation.Binary.Lex.Strict using (×-strictTotalOrder)
 import Data.Tree.AVL.Sets as Sets
 import Data.Tree.AVL.Sets.Membership as SetsMembership
+import Data.Tree.AVL.Map as Map
+import Data.Tree.AVL.Map.Membership as MapsMembership
 open import Data.Sum.Base as Sum using (_⊎_; inj₁; inj₂)
 open import Induction.WellFounded
 open import Relation.Nullary using (¬_; Dec; yes; no; _because_)
@@ -24,6 +30,7 @@ open import Relation.Unary as R1 using (Pred; _∪_; _⊆_; _≐_)
 open import Relation.Unary.Algebra
 open import Relation.Unary.Properties
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; sym; cong)
+open import Relation.Binary.PropositionalEquality.Core
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 open import Relation.Binary.Bundles
 open import Relation.Binary.Structures
@@ -33,7 +40,7 @@ open import Night using (Erased; erased; unerase; Erased-map)
 private variable
   A B : Set
   P Q : A → Set
-  n : ℕ
+  n m : ℕ
 
 Injective : {A B : Set} → (f : A → B) → Set
 Injective {A} f = (x y : A) → f x ≡ f y → x ≡ y
@@ -107,7 +114,7 @@ module _ (Cof-P : IsCofiniteSubset P) (P⊂Q@(P⊆Q , x0 , Qx0 , ¬Px0) : P ⊂ 
     fin-NonZero : Fin n → Nat.NonZero n
     fin-NonZero zero = Nat.nonZero
     fin-NonZero (suc i) = Nat.nonZero
-
+    
     fin-delete : (i j : Fin n) → i ≢ j → Fin (Nat.pred n)
     fin-delete i j with Nat.NonZero.nonZero (fin-NonZero i)
     fin-delete {suc _} i j | _ = Fin.punchOut
@@ -260,3 +267,104 @@ module AVL {A : Set} {_<_ : A → A → Set} (isStrictTotalOrder : IsStrictTotal
 
   Ensembles-AVL : Ensembles A
   Ensembles-AVL = record { Ensembles-AVL-impl }
+
+module Grid where
+
+  module _ (n m : ℕ) where
+
+    Point : Set
+    Point = ℕ × ℕ
+
+    Grid : Set → Set
+    Grid A = Vec (Vec A m) n
+
+  toRow : List A → Maybe (Vec A n)
+  toRow {n = zero} [] = just []
+  toRow {n = suc n} (x ∷ xs) = Maybe.map (x ∷_) (toRow xs)
+  toRow _ = nothing
+
+  toGrid′ : List (List A) → Maybe (∃[ n ] Grid n m A)
+  toGrid′ [] = just (0 , [])
+  toGrid′ (row ∷ rows) = Maybe.zipWith (λ{ row′ (n , rows′) → suc n , row′ ∷ rows′ }) (toRow row) (toGrid′ rows)
+
+  toGrid : List (List A) → Maybe (∃[ n ] ∃[ m ] Grid n m A)
+  toGrid [] = just (0 , 0 , [])
+  toGrid (row ∷ rows) = Maybe.map (λ{ (n , rows′) → suc n , _ , row′ ∷ rows′ }) (toGrid′ rows)
+    where row′ = Vec.fromList row
+
+module NatMap where
+  
+  open Map Nat.<-strictTotalOrder public
+
+module Nat2Map where
+
+  private
+    ℕ²-strictTotalOrder : StrictTotalOrder _ _ _
+    ℕ²-strictTotalOrder = ×-strictTotalOrder Nat.<-strictTotalOrder Nat.<-strictTotalOrder
+
+  open Map ℕ²-strictTotalOrder public
+
+module Griddy where
+  open Nat2Map public
+
+  foldli : (ℕ → A → B → A) → A → List B → A
+  foldli {A = A} {B = B} f = go 0
+    where
+      go : ℕ → A → List B → A
+      go i x [] = x
+      go i x (y ∷ ys) = go i (f (Nat.suc i) x y) ys
+
+  to2D : List (List A) → Map A
+  to2D =
+    flip foldli empty λ i m →
+    flip foldli m λ j m cell →
+    insert (i , j) cell m
+
+  Point : ℕ → ℕ → Set
+  Point n m = Σ[ (i , j) ∈ ℕ × ℕ ] i Nat.<″ n × j Nat.<″ m
+
+  toPoint : ℕ × ℕ → Maybe (Point n m)
+  toPoint {n} {m} (i , j) with i Nat.<″? n | j Nat.<″? m
+  ... | yes i<n | yes j<m = just ((i , j) , i<n , j<m)
+  ... | _ | _ = nothing
+
+  four-neighbors-Point : Point n m → List (Point n m)
+  four-neighbors-Point ((i , j) , _) =
+    let z2 = (suc i , j) ∷ (i , suc i) ∷ []
+        z3 = case i of λ where
+          (suc i′) → (i′ , j) ∷ z2
+          zero → z2
+        z4 = case j of λ where
+          (suc j′) → (i , j′) ∷ z3
+          zero → z3
+    in List.mapMaybe toPoint z4
+
+  four-neighbors : (A → A → Bool) → Map A → Point n m → List (Point n m)
+  four-neighbors {n = n} {m = m} edge g p with lookup g (proj₁ p)
+  ... | nothing = []
+  ... | just x = let f = λ (q : Point n m) → case lookup g (proj₁ q) of λ where
+                       nothing → false
+                       (just y) → edge x y
+                 in List.filterᵇ f (four-neighbors-Point p)
+
+  fromℕ-injective : ∀ {i j} {i<n : i Nat.<″ n} {j<n : j Nat.<″ n} → Fin.fromℕ<″ i i<n ≡ Fin.fromℕ<″ j j<n → i ≡ j
+  fromℕ-injective {i = i} {j = j} {i<n} {j<n} ff = begin
+    i ≡⟨ sym (Fin.toℕ-fromℕ<″ i<n) ⟩
+    Fin.toℕ (Fin.fromℕ<″ i i<n) ≡⟨ cong Fin.toℕ ff ⟩
+    Fin.toℕ (Fin.fromℕ<″ j j<n) ≡⟨ Fin.toℕ-fromℕ<″ j<n ⟩
+    j ∎
+    where open ≡-Reasoning
+
+  Point-point : ∀ {p@(q , _) p′@(q′ , _) : Point n m} → q ≡ q′ → p ≡ p′
+  Point-point {_} {_} {(q , _)} {(.q , _)} refl = cong (q ,_) (cong₂ _,_ (Nat.<″-irrelevant _ _) (Nat.<″-irrelevant _ _))
+
+  Finite-Point : Finite (Point n m)
+  Finite-Point {n} {m} = (n Nat.* m) , (f , inject)
+    where
+      f : Point n m → Fin (n Nat.* m)
+      f ((i , j) , i<n , j<m) = Fin.combine (Fin.fromℕ<″ i i<n) (Fin.fromℕ<″ j j<m)
+
+      inject : Injective f
+      inject ((i , j) , i<n , j<m) ((i′ , j′) , i′<n , j′<m) fx≡fy =
+        let ff , gg = Fin.combine-injective (Fin.fromℕ<″ i i<n) _ _ _ fx≡fy
+        in Point-point (cong₂ _,_ (fromℕ-injective ff) (fromℕ-injective gg))
