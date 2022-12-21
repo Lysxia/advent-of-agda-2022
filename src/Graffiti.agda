@@ -21,8 +21,9 @@ open import Data.Product as Prod using (∃-syntax; Σ-syntax; _×_; _,_; proj�
 open import Data.Product.Relation.Binary.Lex.Strict using (×-strictTotalOrder)
 import Data.Tree.AVL.Sets as Sets
 import Data.Tree.AVL.Sets.Membership as SetsMembership
+import Data.Tree.AVL.Sets.Membership.Properties as Sets∈ₚ
 import Data.Tree.AVL.Map as Map
-import Data.Tree.AVL.Map.Membership as MapsMembership
+import Data.Tree.AVL.Map.Membership.Propositional as MapsMembership
 open import Data.Sum.Base as Sum using (_⊎_; inj₁; inj₂)
 open import Induction.WellFounded
 open import Relation.Nullary using (¬_; Dec; yes; no; _because_)
@@ -232,6 +233,7 @@ module AVL {A : Set} {_<_ : A → A → Set} (isStrictTotalOrder : IsStrictTotal
   module S where
     open Sets STO public
     open SetsMembership STO public
+    open Sets∈ₚ STO public
 
   private module Ensembles-AVL-impl where
 
@@ -245,7 +247,7 @@ module AVL {A : Set} {_<_ : A → A → Set} (isStrictTotalOrder : IsStrictTotal
     ∅ = S.empty , ⊥-elim ∘ S.∈-empty , λ()
 
     Dec-∈ : ∀ x s → Dec (x S.∈ s)
-    Dec-∈ x s = _ because S.∈?-Reflects-∈
+    Dec-∈ x s = _ because S.member-Reflects-∈
 
     _∈?_ : ∀ {@0 P} → (x : A) → Ensemble P → Dec (Erased (P x))
     x ∈? (s , toP , fromP) with Dec-∈ x s
