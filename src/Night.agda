@@ -68,9 +68,14 @@ readSign s with String.uncons s
 ... | _ = nothing
 
 readℤ : String → Maybe ℤ
-readℤ s with readSign s
-... | just (s , etc) = Maybe.map (s ℤ.◃_) (ℕ.readMaybe 10 etc)
-... | nothing = Maybe.map ℤ.+_ (ℕ.readMaybe 10 s)
+readℤ s with String.toList s
+... | '+' ∷ etc = Maybe.map ℤ.+_ (ℕ.readMaybe 10 (String.fromList etc))
+... | '-' ∷ etc = Maybe.map (λ x → ℤ.- (ℤ.+ x)) (ℕ.readMaybe 10 (String.fromList etc))
+... | _ = Maybe.map ℤ.+_ (ℕ.readMaybe 10 s)
+
+-- Using String.uncons runs into a GHC bug!!!
+-- ... | just ('+' , etc) = Maybe.map ℤ.+_ (ℕ.readMaybe 10 etc)
+-- ... | just ('-' , etc) = Maybe.map (λ x → ℤ.- (ℤ.+ x)) (ℕ.readMaybe 10 etc)
 
 _ : readℤ "+3" ≡ just (ℤ.+ 3)
 _ = refl
