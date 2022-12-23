@@ -11,9 +11,10 @@ sh compile.sh
 
 ### Requirements
 
-- Agda
-- agda-stdlib
+- Agda 2.6.2.2
+- [agda-stdlib](https://github.com/agda/agda-stdlib) master branch
 - [komachi](https://github.com/Lysxia/komachi), applicative regex library
+- [agdarsec](https://github.com/gallais/agdarsec)
 - [schmitty](https://github.com/wenkokke/schmitty) ([fork](https://github.com/Lysxia/schmitty/tree/better-error)), bindings for SMT solvers
 
 ```
@@ -22,8 +23,8 @@ sh compile.sh
 # Install libraries
 git clone https://github.com/agda/agda-stdlib
 git clone https://github.com/Lysxia/komachi
-git clone https://github.com/gallais/agdarsec   # Dependency of schmitty
-git clone https://github.com/Lysxia/schmitty -b better-error
+git clone https://github.com/gallais/agdarsec
+git clone https://github.com/Lysxia/schmitty -b dev
 
 cat >> $HOME/.agda/libraries<< EOF
 `pwd`/agda-stdlib

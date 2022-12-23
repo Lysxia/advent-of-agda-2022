@@ -16,8 +16,7 @@ open import Data.String as String using (String; lines; words)
 open import Data.Nat.Show as ℕ using (readMaybe)
 open import Data.Product as Prod using (∃-syntax; _×_; _,_; <_,_>; uncurry)
 open import Data.Unit using (⊤; tt)
-open import Relation.Nullary using (yes; no)
-open import Relation.Nullary.Product using (_×-dec_)
+open import Relation.Nullary using (yes; no; _×-dec_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Binary
 

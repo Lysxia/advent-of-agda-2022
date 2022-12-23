@@ -1,7 +1,8 @@
 module Day11 where
 
 open import Effect.Monad
-open import Effect.Monad.State as State
+open import Effect.Monad.State as State using (State; runState)
+open import Effect.Monad.State.Transformer as StateT using (StateT; RawMonadState; mkStateT; runStateT)
 open import Function.Base using (_$_; _∘_; case_of_)
 open import Data.Bool.Base as Bool using (Bool; true; false; not)
 open import Data.Nat.Base as Nat using (ℕ; suc; zero; _+_; _*_; _/_; _%_)
@@ -87,7 +88,7 @@ module MonkeyLife {n : ℕ} (monkeys : Monkeys n) (relief : Item → Item) {M : 
     starting-stuff = Vec.map (List.reverse ∘ Monkey.starting-items) monkeys
 
     lift : {A : Set} → M A → SM A
-    lift m = λ s → m >>= λ x → pure (x , s)
+    lift m = mkStateT λ s → m >>= λ x → pure (s , x)
       where open MonkeyMonad monkeyMonad
 
     count-inspection : MonkeyName n → SM ⊤
@@ -101,13 +102,17 @@ module MonkeyLife {n : ℕ} (monkeys : Monkeys n) (relief : Item → Item) {M : 
         module MM = MonkeyMonad monkeyMonad
 
   run : {A : Set} → SM A → M A
-  run f = proj₁ <$> f starting-stuff
+  run f = proj₂ <$> runStateT f starting-stuff
     where open MonkeyMonad monkeyMonad
 
   private
-    monadState : RawMonadState S SM
-    monadState = StateTMonadState S (MonkeyMonad.monad monkeyMonad)
+    monad : RawMonad SM
+    monad = StateT.monad (MonkeyMonad.monad monkeyMonad)
 
+    monadState : RawMonadState S SM
+    monadState = StateT.monadState (MonkeyMonad.monad monkeyMonad)
+
+    open RawMonad monad
     open RawMonadState monadState
 
     get-monkey-stuff : MonkeyName n → SM (List Item)
@@ -163,17 +168,18 @@ module MonkeyBusiness (n : ℕ) where
 
     count-inspection- : MonkeyName n → M ⊤
     count-inspection- x = tt <$ modify (_[ x ]%= suc)
-      where open RawMonadState (StateMonadState S)
+      where open RawMonadState State.monadState
+            open RawMonad State.monad
 
     debug- : String → M ⊤
     debug- _ = pure tt
-      where open RawMonadState (StateMonadState S)
+      where open RawMonad State.monad
 
   open MonkeyMonad
 
   monkeyMonad : MonkeyMonad n M
   monkeyMonad = λ where
-    .monad → StateMonad S
+    .monad → State.monad
     .count-inspection → count-inspection-
     .debug → debug-
 
@@ -189,10 +195,10 @@ module MonkeyBusiness (n : ℕ) where
     ... | _ = 0
 
   monkey-business : M ⊤ → ℕ
-  monkey-business f = max-two (proj₂ (f s0))
+  monkey-business f = max-two (proj₁ (runState f s0))
 
-  MB-debug-run : {A : Set} → M A → A × List ℕ
-  MB-debug-run f = Prod.map₂ Vec.toList (f s0)
+  MB-debug-run : {A : Set} → M A → List ℕ × A
+  MB-debug-run f = Prod.map₁ Vec.toList (runState f s0)
 
 module Debug (n : ℕ) {M} (monkeyMonad : MonkeyMonad n M) where
   private
@@ -206,11 +212,19 @@ module Debug (n : ℕ) {M} (monkeyMonad : MonkeyMonad n M) where
     SM = StateT S M
 
     lift : {A : Set} → M A → SM A
-    lift m = λ s → m >>= λ x → pure (x , s)
+    lift m = mkStateT λ s → m >>= λ x → pure (s , x)
       where open MonkeyMonad monkeyMonad
 
-  open MonkeyMonad hiding (_<$_)
-  open RawMonadState (StateTMonadState S (monad monkeyMonad)) using (modify; _<$_) renaming (monad to monad-S)
+    open MonkeyMonad hiding (_<$_)
+
+    monad-S : RawMonad SM
+    monad-S = StateT.monad (monad monkeyMonad)
+
+    monadState-S : RawMonadState S SM
+    monadState-S = StateT.monadState (monad monkeyMonad)
+
+  open RawMonad monad-S using (_<$_)
+  open RawMonadState monadState-S using (modify)
 
   monkeyMonad-debug : MonkeyMonad n SM
   monkeyMonad-debug = λ where
@@ -219,7 +233,7 @@ module Debug (n : ℕ) {M} (monkeyMonad : MonkeyMonad n M) where
     .debug s → tt <$ modify (s ∷_)
 
   debug-run : {A : Set} → SM A → M (List String)
-  debug-run f = _<$>_ monkeyMonad (List.reverse ∘ proj₂) (f s0)
+  debug-run f = _<$>_ monkeyMonad (List.reverse ∘ proj₁) (runStateT f s0)
 
 solve-1 : Input → ℕ
 solve-1 (n , monkeys) = monkey-business (run (rounds 20))
@@ -229,7 +243,7 @@ solve-1 (n , monkeys) = monkey-business (run (rounds 20))
     open MonkeyLife monkeys relief monkeyMonad
 
 solve-1-debug : Input → List ℕ × List String 
-solve-1-debug (n , monkeys) = Prod.swap (MB-debug-run (debug-run (run (rounds 20))))
+solve-1-debug (n , monkeys) = MB-debug-run (debug-run (run (rounds 20)))
   where
     relief = _/ 3
     open MonkeyBusiness n
@@ -251,7 +265,7 @@ solve-2 (n , monkeys) with List.product (List.map divisor (Vec.toList monkeys))
 solve-2-debug : ℕ → Input → List ℕ × List String
 solve-2-debug n-rounds (n , monkeys) with List.product (List.map divisor (Vec.toList monkeys))
 ... | zero = [] , []
-... | d@(suc _) = Prod.swap (MB-debug-run (debug-run (run (rounds n-rounds))))
+... | d@(suc _) = MB-debug-run (debug-run (run (rounds n-rounds)))
   where
     relief = _% d
     open MonkeyBusiness n
@@ -261,7 +275,7 @@ solve-2-debug n-rounds (n , monkeys) with List.product (List.map divisor (Vec.to
 solve-2-debug′ : ℕ → Input → List ℕ
 solve-2-debug′ n-rounds (n , monkeys) with List.product (List.map divisor (Vec.toList monkeys))
 ... | zero = []
-... | d@(suc _) = proj₂ (MB-debug-run (run (rounds n-rounds)))
+... | d@(suc _) = proj₁ (MB-debug-run (run (rounds n-rounds)))
   where
     relief = _% d
     open MonkeyBusiness n

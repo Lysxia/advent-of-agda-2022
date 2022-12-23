@@ -2,6 +2,7 @@
 module Night where
 
 open import Level using () renaming (zero to 0ℓ)
+import Algebra.Definitions
 open import Function.Base using (id; _∘_)
 open import Data.Fin.Base as Fin using (Fin)
 open import Data.Empty using (⊥)
@@ -14,12 +15,19 @@ open import Data.List.Base as List using (List; []; _∷_)
 open import Data.List.Effectful as List
 open import Data.Maybe as Maybe using (Maybe; just; nothing)
 open import Data.Maybe.Effectful as Maybe using (applicative)
-open import Data.Product using (_×_; _,_)
+open import Data.Product as Prod using (_×_; _,_; proj₁; proj₂)
 open import Data.String as String using (String; _≈?_; unlines)
+open import Data.Sum as Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit
 open import Relation.Nullary using (¬_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Unary
+open import Relation.Binary
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; cong)
 open import Reflection
+
+private variable
+  A B : Set
+  P Q : A → Set
 
 macro
   print : Term → Term → TC ⊤
@@ -97,3 +105,56 @@ Erased-map f (erased x) = erased (f x)
 erased-⊥ : @0 ⊥ → ⊥
 erased-⊥ ()
 
+≢-proj₂ : {p q : A × B} → proj₂ p ≢ proj₂ q → p ≢ q
+≢-proj₂ pp = pp ∘ cong proj₂
+
+≢-proj₁′ : {x x′ : A} {y : B} → (x , y) ≢ (x′ , y) → x ≢ x′
+≢-proj₁′ pp = pp ∘ cong (_, _)
+
+module _ {A : Set} where
+
+  _==_ = _≐_ {A = A} {0ℓ} {0ℓ}
+
+  open Algebra.Definitions _==_
+
+  ∩-mono-⊆ : _∩_ {A = A} {0ℓ} {0ℓ} Preserves₂ _⊆_ ⟶ _⊆_ ⟶ _⊆_
+  ∩-mono-⊆ P⊆ Q⊆ = Prod.map P⊆ Q⊆
+
+  ∪-mono-⊆ : _∪_ {A = A} {0ℓ} {0ℓ} Preserves₂ _⊆_ ⟶ _⊆_ ⟶ _⊆_
+  ∪-mono-⊆ P⊆ Q⊆ = Sum.map P⊆ Q⊆
+
+  ∪-mono-≐ : _∪_ Preserves₂ _==_ ⟶ _==_ ⟶ _==_
+  ∪-mono-≐ P== Q== = Sum.map (proj₁ P==) (proj₁ Q==) , Sum.map (proj₂ P==) (proj₂ Q==)
+
+  ∩-mono-≐ : _∩_ Preserves₂ _==_ ⟶ _==_ ⟶ _==_
+  ∩-mono-≐ P== Q== = Prod.map (proj₁ P==) (proj₁ Q==) , Prod.map (proj₂ P==) (proj₂ Q==)
+
+  ∩-distribʳ-∪ : _DistributesOverʳ_ _∩_ _∪_
+  ∩-distribʳ-∪ _ _ _ =
+    (λ where
+      (inj₁ x , y) → inj₁ (x , y)
+      (inj₂ x , y) → inj₂ (x , y)
+    ) , (λ where
+      (inj₁ (x , y)) → inj₁ x , y
+      (inj₂ (x , y)) → inj₂ x , y)
+
+  ∩-distribˡ-∪ : _DistributesOverˡ_ _∩_ _∪_
+  ∩-distribˡ-∪ _ _ _ =
+    (λ where
+      (x , inj₁ y) → inj₁ (x , y)
+      (x , inj₂ y) → inj₂ (x , y)
+    ) , (λ where
+      (inj₁ (x , y)) → x , inj₁ y
+      (inj₂ (x , y)) → x , inj₂ y)
+
+  ∪-comm : Commutative _∪_
+  ∪-comm _ _ = Sum.swap , Sum.swap
+
+  ∪-idem : Idempotent _∪_
+  ∪-idem _ = Sum.reduce , inj₁
+
+  ∪-assoc : Associative _∪_
+  ∪-assoc _ _ _ = Sum.[ Sum.[ inj₁ , inj₂ ∘ inj₁ ] , inj₂ ∘ inj₂ ] , Sum.[ inj₁ ∘ inj₁ , Sum.[ inj₁ ∘ inj₂ , inj₂ ] ]
+
+⊆-∩ˡ : P ∩ Q ⊆ P
+⊆-∩ˡ (Px , _) = Px

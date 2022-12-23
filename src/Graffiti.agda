@@ -255,11 +255,13 @@ module AVL {A : Set} {_<_ : A → A → Set} (isStrictTotalOrder : IsStrictTotal
     ... | no ¬sx = no (λ{ (erased Px) → erased-⊥ (¬sx (fromP Px)) })
 
     insert : ∀ {@0 P} → (x : A) → Ensemble P → Ensemble ((x ≡_) ∪ P)
-    insert x (s , s≐P)
+    insert {P = P} x (s , s≐P)
       = S.insert x s , Sum.map sym (proj₁ s≐P) ∘ S.∈-insert⁻
-      , unerase (Erased-<&> (erased s≐P) λ s≐P → λ where
-          (inj₁ refl) → S.∈-insert⁺⁺
-          (inj₂ Px) → S.∈-insert⁺ (proj₂ s≐P Px))
+      , proof
+      where
+        @0 proof : (x ≡_) ∪ P ⊆ (S._∈ S.insert x s)
+        proof (inj₁ refl) = S.∈-insert⁺⁺
+        proof (inj₂ Px) = S.∈-insert⁺ (proj₂ s≐P Px)
 
     ext : ∀ {@0 P Q} → @0 P ≐ Q → Ensemble P → Ensemble Q
     ext P≐Q (s , s≐P) = s , ≐-trans s≐P P≐Q
