@@ -7,7 +7,7 @@ open import Data.Bool.Base using (Bool; true; false)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Unit.Base using (⊤; tt)
 open import Data.Nat as Nat using (ℕ; zero; suc; _<_)
-open import Data.Nat.Properties as Nat
+open import Data.Nat.Properties as Natₚ
 open import Data.Irrelevant
 open import Data.Fin as Fin using (Fin; zero; suc)
 import Data.Fin.Properties as Fin
@@ -41,7 +41,7 @@ open import Night using (Erased; erased; unerase; Erased-map; erased-⊥)
 private variable
   A B : Set
   P Q : A → Set
-  n m : ℕ
+  n m p : ℕ
 
 Injective : {A B : Set} → (f : A → B) → Set
 Injective {A} f = (x y : A) → f x ≡ f y → x ≡ y
@@ -295,12 +295,12 @@ module Grid where
 
 module NatMap where
   
-  open Map Nat.<-strictTotalOrder public
+  open Map Natₚ.<-strictTotalOrder public
 
 module Nat2Map where
 
   STO : StrictTotalOrder _ _ _
-  STO = ×-strictTotalOrder Nat.<-strictTotalOrder Nat.<-strictTotalOrder
+  STO = ×-strictTotalOrder Natₚ.<-strictTotalOrder Natₚ.<-strictTotalOrder
 
   open StrictTotalOrder STO public renaming (_<_ to _<²_)
 
@@ -323,10 +323,12 @@ module Griddy where
     insert (i , j) cell m
 
   Point : ℕ → ℕ → Set
-  Point n m = Σ[ (i , j) ∈ ℕ × ℕ ] i Nat.<″ n × j Nat.<″ m
+  Point n m = Σ[ (i , j) ∈ ℕ × ℕ ] i <″ n × j <″ m
+    where open Nat using (_<″_)
 
   toPoint : ℕ × ℕ → Maybe (Point n m)
-  toPoint {n} {m} (i , j) with i Nat.<″? n | j Nat.<″? m
+  toPoint {n} {m} (i , j) with i <″? n | j <″? m
+    where open Natₚ using (_<″?_)
   ... | yes i<n | yes j<m = just ((i , j) , i<n , j<m)
   ... | _ | _ = nothing
 
@@ -358,7 +360,7 @@ module Griddy where
     where open ≡-Reasoning
 
   Point-point : ∀ {p@(q , _) p′@(q′ , _) : Point n m} → q ≡ q′ → p ≡ p′
-  Point-point {_} {_} {(q , _)} {(.q , _)} refl = cong (q ,_) (cong₂ _,_ (Nat.<″-irrelevant _ _) (Nat.<″-irrelevant _ _))
+  Point-point {_} {_} {(q , _)} {(.q , _)} refl = cong (q ,_) (cong₂ _,_ (Natₚ.<″-irrelevant _ _) (Natₚ.<″-irrelevant _ _))
 
   Finite-Point : Finite (Point n m)
   Finite-Point {n} {m} = (n Nat.* m) , (f , inject)
@@ -390,3 +392,34 @@ module Griddy where
       ; Finite-Vertex = Finite-Point
       ; neighbors = four-neighbors edge vertexMap
       }
+
+module _ where
+  Point3 : ℕ → ℕ → ℕ → Set
+  Point3 n m p = Σ[ (i , j , k) ∈ ℕ × ℕ × ℕ ] i <″ n × j <″ m × k <″ p
+    where open Nat using (_<″_)
+
+  toPoint3 : ℕ × ℕ × ℕ → Maybe (Point3 n m p)
+  toPoint3 {n} {m} {p} (i , j , k) with i <″? n | j <″? m | k <″? p
+    where open Natₚ using (_<″?_)
+  ... | yes i<n | yes j<m | yes k<p = just ((i , j , k) , i<n , j<m , k<p)
+  ... | _ | _ | _ = nothing
+
+  Finite-Point3 : Finite (Point3 n m p)
+  Finite-Point3 {n} {m} {p} = (n * (m * p)) , f , inject
+    where
+      open Nat using (_*_)
+
+      Point3-point : ∀ {P P′ : Point3 n m p} → proj₁ P ≡ proj₁ P′ → P ≡ P′
+      Point3-point {P = (q , _)} {(.q , _)} refl = cong (q ,_) (cong₂ _,_ (Natₚ.<″-irrelevant _ _) (cong₂ _,_ (Natₚ.<″-irrelevant _ _) (Natₚ.<″-irrelevant _ _)))
+
+      f : Point3 n m p -> Fin (n * (m * p))
+      f ((i , j , k) , i<n , j<m , k<p) = Fin.combine (Fin.fromℕ<″ i i<n) (Fin.combine (Fin.fromℕ<″ j j<m) (Fin.fromℕ<″ k k<p))
+
+      inject : Injective f
+      inject ((i , j , k) , i<n , j<m , k<p) ((i′ , j′ , k′) , i′<n , j′<m , k′<p) fx≡fy =
+        let fii , w = Fin.combine-injective (Fin.fromℕ<″ i i<n) _ _ _ fx≡fy
+            fjj , fkk = Fin.combine-injective (Fin.fromℕ<″ j j<m) _ _ _ w
+            ii = Griddy.fromℕ-injective fii
+            jj = Griddy.fromℕ-injective fjj
+            kk = Griddy.fromℕ-injective fkk
+        in Point3-point (cong₂ _,_ ii (cong₂ _,_ jj kk))
